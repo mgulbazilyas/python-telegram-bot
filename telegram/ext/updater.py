@@ -20,6 +20,7 @@
 
 import logging
 import ssl
+import time
 import warnings
 from queue import Queue
 from signal import SIGABRT, SIGINT, SIGTERM, signal
@@ -39,7 +40,7 @@ from typing import (
     overload,
 )
 
-from telegram import Bot, TelegramError
+from telegram import Bot, TelegramError, error
 from telegram.error import InvalidToken, RetryAfter, TimedOut, Unauthorized
 from telegram.ext import Dispatcher, JobQueue, ContextTypes, ExtBot
 from telegram.utils.deprecate import TelegramDeprecationWarning, set_new_attribute_deprecated
@@ -594,13 +595,22 @@ class Updater(Generic[CCT, UD, CD, BD]):
         self.logger.debug('Bootstrap done')
 
         def polling_action_cb():
-            updates = self.bot.get_updates(
-                self.last_update_id,
-                timeout=timeout,
-                read_latency=read_latency,
-                allowed_updates=allowed_updates,
-            )
-
+            e = Exception("Timeout error")
+            for i in range(10):
+                try:
+                    updates = self.bot.get_updates(
+                        self.last_update_id,
+                        timeout=timeout,
+                        read_latency=read_latency,
+                        allowed_updates=allowed_updates,
+                    )
+                    break
+                except error.NetworkError as e:
+                    self.logger.warning(f'Failed to get update trying again in 30 seconds. {i+1} times')
+                    time.sleep(30)
+                    pass
+            else:
+                raise e
             if updates:
                 if not self.running:
                     self.logger.debug('Updates ignored and will be pulled again on restart')
