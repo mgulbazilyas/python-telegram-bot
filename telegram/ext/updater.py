@@ -606,9 +606,15 @@ class Updater(Generic[CCT, UD, CD, BD]):
                     )
                     break
                 except error.NetworkError as e:
-                    self.logger.warning(f'Failed to get update trying again in 30 seconds. {i+1} times')
+                    self.logger.warning(f'Failed to get update trying again in 30 seconds. {i+1} times. ')
+
                     time.sleep(30)
                     pass
+                except Exception as e:
+                    self.logger.error(f'unknown exception. {i + 1} times. ')
+                    self.logger.exception(e)
+                    time.sleep(30)
+
             else:
                 raise e
             if updates:
