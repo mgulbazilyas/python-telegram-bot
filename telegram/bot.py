@@ -21,6 +21,7 @@
 
 import functools
 import logging
+import time
 import warnings
 from datetime import datetime
 
@@ -291,10 +292,19 @@ class Bot(TelegramObject):
             effective_timeout = cast(float, timeout)
         # Drop any None values because Telegram doesn't handle them well
         data = {key: value for key, value in data.items() if value is not None}
+        e = None
+        for i in range(10):
+            try:
+                return self.request.post(
+                    f'{self.base_url}/{endpoint}', data=data, timeout=effective_timeout
+                )
 
-        return self.request.post(
-            f'{self.base_url}/{endpoint}', data=data, timeout=effective_timeout
-        )
+            except Exception as e:
+                self.logger.error(f'unknown exception. {i + 1} times. ')
+                self.logger.exception(e)
+                time.sleep(30)
+        else:
+            raise e
 
     def _message(
         self,
