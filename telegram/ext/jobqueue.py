@@ -200,6 +200,7 @@ class JobQueue:
             run_date=date_time,
             args=self._build_args(job),
             timezone=date_time.tzinfo or self.scheduler.timezone,
+            misfire_grace_time=400,
             **job_kwargs,
         )
 
